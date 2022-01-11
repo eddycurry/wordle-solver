@@ -8,7 +8,7 @@ import random
 from collections import Counter
 
 
-def get_new_word(poss, cts, l_in_w, wl):
+def get_new_word_list(poss, cts, l_in_w, wl):
     hold = []
     for w in wl:
         keep_flag = True
@@ -47,17 +47,35 @@ def evaluate_guess(word, guess):
 def get_word_list():
     return [w for w in words.words() if (len(w) == 5) and not (re.search("[A-Z]", w))]
 
+def get_new_word(wl):
+    ct = Counter()
+    for w in wl:
+        ct += Counter(w)
+    word_scores = {}
+    for w in wl:
+        word_scores[w] = 0
+        for l in set(w):
+            word_scores[w] += ct[l]
+    return max(word_scores, key=word_scores.get)
 
-def wordle_solver(goal_word: Optional[str] = None, seed_word: Optional[str] = None):
+
+
+def wordle_solver(goal_word: Optional[str] = None, seed_word: Optional[str] = None, random_seed_word=False):
     word_list = get_word_list()
     letter_possibilities = {n: list(string.ascii_lowercase) for n in range(6)}
     letter_counts = {l: 5 for l in string.ascii_lowercase}
     for i in range(100):
 
+        if (i == 0) and (seed_word is not None):
+            cur_word = seed_word
+        elif (i == 0) and random_seed_word:
+            cur_word = random.sample(word_list, 1)[0]
+        else:
+            cur_word = get_new_word(word_list)
+
         if goal_word is None:
             run_flag = True
             while run_flag:
-                cur_word = random.sample(word_list, 1)[0]
                 print(f"Try: {cur_word}")
                 result_l = input("Please enter how I did:")
                 if result_l == "no":
@@ -66,10 +84,6 @@ def wordle_solver(goal_word: Optional[str] = None, seed_word: Optional[str] = No
                 assert(len(result_l) == 5)
                 break
         else:
-            if (i == 0) and seed_word is not None:
-                cur_word = seed_word
-            else:
-                cur_word = random.sample(word_list, 1)[0]
             print(f"Try: {cur_word}")
             result_l = evaluate_guess(goal_word, cur_word)
 
@@ -98,24 +112,24 @@ def wordle_solver(goal_word: Optional[str] = None, seed_word: Optional[str] = No
                 letter_possibilities[idx] = [cur_word[idx]]
                 letter_counts[cur_word[idx]] += 1
 
-        word_list = get_new_word(letter_possibilities, letter_counts, letters_in_cur_word, word_list)
+        word_list = get_new_word_list(letter_possibilities, letter_counts, letters_in_cur_word, word_list)
     return i + 1
 
 def test_seed_words(seed_words):
     results = {}
-    for w in random.sample(get_word_list(), 100):
+    random.seed(42)
+    for w in random.sample(get_word_list(), 500):
         for seed_word in seed_words + [None]:
             r = wordle_solver(w, seed_word)
             seed_key = seed_word if seed_word is not None else "_random_word"
             try:
-                results[seed_word].append(r)
+                results[seed_key].append(r)
             except:
-                results[seed_word] = [r]
+                results[seed_key] = [r]
     df = pd.DataFrame(results)
     return df
 
 
 if __name__ == "__main__":
-    df = test_seed_words(["tares", "death", "riles", "adieu", "laser"])
-    print("hi")
+    wordle_solver("siege", random_seed_word=False)
 
