@@ -45,7 +45,10 @@ def evaluate_guess(word, guess):
     return ''.join(result_l)
 
 def get_word_list():
-    return [w for w in words.words() if (len(w) == 5) and not (re.search("[A-Z]", w))]
+    with open("word_list.json") as f:
+        import json
+        wl = json.load(f)
+    return wl["list"]
 
 def get_new_word(wl):
     ct = Counter()
@@ -57,7 +60,6 @@ def get_new_word(wl):
         for l in set(w):
             word_scores[w] += ct[l]
     return max(word_scores, key=word_scores.get)
-
 
 
 def wordle_solver(goal_word: Optional[str] = None, seed_word: Optional[str] = None, random_seed_word=False):
@@ -118,7 +120,7 @@ def wordle_solver(goal_word: Optional[str] = None, seed_word: Optional[str] = No
 def test_seed_words(seed_words):
     results = {}
     random.seed(42)
-    for w in random.sample(get_word_list(), 500):
+    for w in get_word_list():
         for seed_word in seed_words + [None]:
             r = wordle_solver(w, seed_word)
             seed_key = seed_word if seed_word is not None else "_random_word"
@@ -131,5 +133,4 @@ def test_seed_words(seed_words):
 
 
 if __name__ == "__main__":
-    wordle_solver("siege", random_seed_word=False)
-
+    wordle_solver("query")
